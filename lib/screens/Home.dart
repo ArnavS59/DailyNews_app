@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:news/data/data.dart';
 import 'package:news/models/Category.dart';
+import 'package:news/models/article_model.dart';
+import 'package:news/screens/article_page.dart';
+import 'package:news/screens/category.dart';
+import '../data/news.dart';
 
 class Home extends StatefulWidget {
 //  const Home({Key key}) : super(key: key);
@@ -11,10 +15,24 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<CategoryModel> categories = new List<CategoryModel>();
+  List<ArticleModel> articles = new List<ArticleModel>();
+
+  bool _loading = true;
+
   @override
   void initState() {
     super.initState();
     categories = getCategories();
+    getNews();
+  }
+
+  getNews() async {
+    News newsClass = News();
+    await newsClass.getNews();
+    articles = newsClass.news;
+    setState(() {
+      _loading = false;
+    });
   }
 
   @override
@@ -35,24 +53,52 @@ class _HomeState extends State<Home> {
               ]),
           elevation: 5,
         ),
-        body: Container(
-            child: Column(
-          children: <Widget>[
-            Container(
-              height: 70,
-              child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categories.length,
-                  shrinkWrap: true,
-                  itemBuilder: (context, index) {
-                    return CategoryItem(
-                      categoryName: categories[index].categoryName,
-                      imageURl: categories[index].imageUrl,
-                    );
-                  }),
-            )
-          ],
-        )));
+        body: _loading
+            ? Center(
+                child: Container(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            : SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: <Widget>[
+                      //Categories
+                      Container(
+                        height: 70,
+                        child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: categories.length,
+                            shrinkWrap: true,
+                            itemBuilder: (context, index) {
+                              return CategoryItem(
+                                categoryName: categories[index].categoryName,
+                                imageURl: categories[index].imageUrl,
+                              );
+                            }),
+                      ),
+                      //Blogs
+                      Container(
+                        padding: EdgeInsets.only(top: 15),
+                        child: ListView.builder(
+                            physics: ClampingScrollPhysics(), //scroll fix
+                            itemCount: articles.length,
+                            shrinkWrap: true,
+                            itemBuilder: (context, index) {
+                              return BlogItem(
+                                description: articles[index].description,
+                                title: articles[index].title,
+                                imageUrl: articles[index].urltoImage,
+                                url: articles[index].url,
+                              );
+                            }),
+                      )
+                    ],
+                  ),
+                ),
+              ));
   }
 }
 
@@ -67,7 +113,15 @@ class CategoryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CategoryPage(
+                category: categoryName.toLowerCase(),
+              ),
+            ));
+      },
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 12),
         child: Stack(
@@ -107,22 +161,49 @@ class CategoryItem extends StatelessWidget {
 class BlogItem extends StatelessWidget {
   //const BlogItem({Key key}) : super(key: key);
 
-  final String imageUrl, title, description;
-  BlogItem({
-    @required this.description,
-    @required this.title,
-    @required this.imageUrl,
-  });
+  final String imageUrl, title, description, url;
+  BlogItem(
+      {@required this.description,
+      @required this.title,
+      @required this.imageUrl,
+      @required this.url});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Image.network(imageUrl),
-          Text(title),
-          Text(description),
-        ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (context) {
+            return ArticlePage(blogurl: url);
+          },
+        ));
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16),
+        child: Column(
+          children: <Widget>[
+            ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.network(imageUrl)),
+            SizedBox(
+              height: 10,
+            ),
+            Text(
+              title,
+              style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500),
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Text(
+              description,
+              style: TextStyle(color: Colors.black54),
+            ),
+          ],
+        ),
       ),
     );
   }
