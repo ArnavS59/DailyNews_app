@@ -67,7 +67,7 @@ class _HomeState extends State<Home> {
                     children: <Widget>[
                       //Categories
                       Container(
-                        height: 70,
+                        height: 75,
                         child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: categories.length,
